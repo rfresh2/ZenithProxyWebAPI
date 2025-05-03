@@ -15,6 +15,7 @@ zenithProxyPlugin {
 }
 
 repositories {
+    mavenLocal()
     maven("https://maven.2b2t.vc/releases") {
         description = "ZenithProxy Releases and Dependencies"
     }
@@ -25,4 +26,19 @@ repositories {
 
 dependencies {
     zenithProxy("com.zenith:ZenithProxy:$mc-SNAPSHOT")
+    shade("io.javalin:javalin:6.6.0")
+}
+
+tasks {
+    shadowJar {
+        val shadowPackage = "dev.zenith.web.shadow"
+        relocate("io.javalin", "$shadowPackage.javalin")
+        relocate("jakarta.servlet", "$shadowPackage.jakarta.servlet")
+        relocate("kotlin", "$shadowPackage.kotlin")
+        relocate("org.eclipse", "$shadowPackage.org.eclipse")
+        exclude("org/slf4j/**")
+        exclude("org/jetbrains/**")
+        exclude("META-INF/maven/**")
+        // todo: transform service files? seems to work fine without them for now
+    }
 }

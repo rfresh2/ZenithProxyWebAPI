@@ -1,4 +1,4 @@
-package org.example;
+package dev.zenith.web;
 
 // The constants are replaced before compilation
 public class BuildConstants {

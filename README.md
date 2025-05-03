@@ -1,64 +1,69 @@
-# ZenithProxy Example Plugin
+# ZenithProxy Web API Plugin
 
-[ZenithProxy](https://github.com/rfresh2/ZenithProxy) is a Minecraft proxy and bot.
+Runs a local web server that lets you interact with the ZenithProxy instance.
 
-This repository is an example core plugin for ZenithProxy, allowing you to add custom modules and commands.
+# Commands
 
-## Installing Plugins
+## `webApi`
 
-Plugins are only supported on the `java` ZenithProxy release channel (i.e. not `linux`).
+* `webApi on/off` -> default: on
+* `webApi port <port>` -> default: 8080
+* `webApi auth <token>`
 
-Place plugin jars in the `plugins` folder inside the same folder as the ZenithProxy launcher.
+# HTTP API
 
-Restart ZenithProxy to load plugins. Loading plugins after launch or hot reloading is not supported.
+## Authorization
 
-## Creating Plugins
+All HTTP requests must have an `Authorization` header.
 
-Use this repository as a template to create your own plugin repository.
+A default auth token is generated on first launch.
 
-### Plugin Structure
+Or it can be set with the `webApi auth <token>` command.
 
-Each plugin needs a main class that implements `ZenithProxyPlugin` and is annotated with `@Plugin`.
+## POST `/command`
 
-Plugin metadata like its unique id, version, and supported MC versions is defined in the `@Plugin` annotation.
+### Request Body
 
-[See example](https://github.com/rfresh2/ZenithProxyExamplePlugin/blob/1.21.0/src/main/java/org/example/ExamplePlugin.java)
+```json
+{
+  "command": "status"
+}
+```
 
-### Plugin API
+### Response
 
-The `ZenithProxyPlugin` interface requires you to implement an `onLoad` method.
+```json
+{
+   "embed": "\nZenithProxy 0.0.0 - Unknown\n\nStatus\nDisconnected\nConnected Player\nNone\nOnline For\nNot Online!\nHealth\n20.0\nDimension\nNone\nPing\n0ms\nProxy IP\nlocalhost\nServer\nconnect.2b2t.org:25565\nPriority Queue\nno [unbanned]\nSpectators\non\n2b2t Queue\nPriority: 15 [00:25:49]\nRegular: 688 [07:49:27]\nCoordinates\n||[0, 0, 0]||\nAutoUpdate\non",
+   "embedComponent": "{\"color\":\"#E91E63\",\"extra\":[\"\\n\",{\"bold\":true,\"text\":\"ZenithProxy 0.0.0 - Unknown\"},\"\\n\",\"\\n\",{\"bold\":true,\"extra\":[\"\\n\"],\"text\":\"Status\"},{\"extra\":[\"Disconnected\"],\"text\":\"\"},\"\\n\",{\"bold\":true,\"extra\":[\"\\n\"],\"text\":\"Connected Player\"},{\"extra\":[\"None\"],\"text\":\"\"},\"\\n\",{\"bold\":true,\"extra\":[\"\\n\"],\"text\":\"Online For\"},{\"extra\":[\"Not Online!\"],\"text\":\"\"},\"\\n\",{\"bold\":true,\"extra\":[\"\\n\"],\"text\":\"Health\"},{\"extra\":[\"20.0\"],\"text\":\"\"},\"\\n\",{\"bold\":true,\"extra\":[\"\\n\"],\"text\":\"Dimension\"},{\"extra\":[\"None\"],\"text\":\"\"},\"\\n\",{\"bold\":true,\"extra\":[\"\\n\"],\"text\":\"Ping\"},{\"extra\":[\"0ms\"],\"text\":\"\"},\"\\n\",{\"bold\":true,\"extra\":[\"\\n\"],\"text\":\"Proxy IP\"},{\"extra\":[\"localhost\"],\"text\":\"\"},\"\\n\",{\"bold\":true,\"extra\":[\"\\n\"],\"text\":\"Server\"},{\"extra\":[\"connect.2b2t.org:25565\"],\"text\":\"\"},\"\\n\",{\"bold\":true,\"extra\":[\"\\n\"],\"text\":\"Priority Queue\"},{\"extra\":[\"no [unbanned]\"],\"text\":\"\"},\"\\n\",{\"bold\":true,\"extra\":[\"\\n\"],\"text\":\"Spectators\"},{\"extra\":[\"on\"],\"text\":\"\"},\"\\n\",{\"bold\":true,\"extra\":[\"\\n\"],\"text\":\"2b2t Queue\"},{\"extra\":[\"Priority: 15 [00:25:49]\\nRegular: 688 [07:49:27]\"],\"text\":\"\"},\"\\n\",{\"bold\":true,\"extra\":[\"\\n\"],\"text\":\"Coordinates\"},{\"extra\":[\"||[0, 0, 0]||\"],\"text\":\"\"},\"\\n\",{\"bold\":true,\"extra\":[\"\\n\"],\"text\":\"AutoUpdate\"},{\"extra\":[\"on\"],\"text\":\"\"}],\"text\":\"\"}",
+   "multiLineOutput": []
+}
+```
 
-This method provides a `PluginAPI` object that you can use to register modules, commands, and config files.
+The `embedComponent` can be parsed back from json with [Kyori Adventure](https://docs.advntr.dev/getting-started.html)
+```java
+Component c = GsonComponentSerializer.gson().deserialize(embedComponent);
+```
 
-`Module` and `Command` classes are implemented the same as in the ZenithProxy source code.
+### Example
 
-I recommend looking at existing modules and commands for examples.
+```bash
+curl --location 'http://localhost:8080/command' \
+--header 'Authorization: c05598ed-d123-4e8f-9aa7-40c11e657f23' \
+--header 'Content-Type: application/json' \
+--data '{"command":"status"}'
+```
 
-* [Module](https://github.com/rfresh2/ZenithProxy/tree/1.21.0/src/main/java/com/zenith/module)
-* [Command](https://github.com/rfresh2/ZenithProxy/tree/1.21.0/src/main/java/com/zenith/command)
+# FAQ
 
-### Building Plugins
+## How do I call the API from the public internet?
 
-Execute the Gradle `build` task: `./gradlew build` - or double-click the task in Intellij
+Depends on where and how you are hosting the ZenithProxy instance.
 
-The built plugin jar will be in the `build/libs` directory.
+It's the same as accessing the ZenithProxy MC server from the public internet.
 
-### Testing Plugins
+So if you had to change firewall settings, port forwarding, or set up tunneling you'd do the same for the web API's port.
 
-Execute the `run` task: `./gradlew run` - or double-click the task in Intellij
+## I'm running multiple ZenithProxy instance on the same server, can they all have web APIs?
 
-This will run ZenithProxy with your plugin loaded in the `run` directory.
-
-### New Plugin Checklist
-
-1. Edit `gradle.properties`:
-   - `plugin_name` - Name of your plugin, used in the plugin jar name (e.g. `ExamplePlugin`)
-   - `maven_group` - Java package for your project (e.g. `com.github.rfresh2`)
-1. Move files to your new corresponding package / maven group:
-   - Example: `src/main/java/org/example` -> `src/main/java/com/github/rfresh2`
-   - First create the new package in `src/main/java`. Then click and drag original subpackages/classes to your new one
-   - Do this with Intellij to avoid manually editing all the source files
-   - You must also move folders/package for the `src/main/templates` folder
-   - Also make sure to update the package import at the very top of `BuiltConstants.java`, it will not be done automatically
-1. Edit `ExamplePlugin.java`, or remove it and create a new main class
-   - Make sure to update the `@Plugin` annotation
+Yes, but each needs to be configured to use a different port: `webApi port <port>`
