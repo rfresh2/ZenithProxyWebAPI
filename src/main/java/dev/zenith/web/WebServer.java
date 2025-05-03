@@ -8,9 +8,11 @@ import dev.zenith.web.model.AuthErrorResponse;
 import dev.zenith.web.model.CommandRequest;
 import dev.zenith.web.model.CommandResponse;
 import io.javalin.Javalin;
+import io.javalin.http.util.NaiveRateLimit;
 import org.eclipse.jetty.util.thread.ExecutorThreadPool;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import static dev.zenith.web.WebApiPlugin.LOG;
 import static dev.zenith.web.WebApiPlugin.PLUGIN_CONFIG;
@@ -66,6 +68,9 @@ public class WebServer {
                 LOG.warn("Denied request from {}: {}", ctx.ip(), reason);
             })
             .post("/command", ctx -> {
+                if (PLUGIN_CONFIG.rateLimiter) {
+                    NaiveRateLimit.requestPerTimeUnit(ctx, PLUGIN_CONFIG.rateLimitRequestsPerMinute, TimeUnit.MINUTES);
+                }
                 var req = ctx.bodyAsClass(CommandRequest.class);
                 var command = req.command();
                 var context = CommandContext.create(command, WebAPICommandSource.INSTANCE);
