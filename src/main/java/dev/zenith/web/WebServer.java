@@ -44,7 +44,7 @@ public class WebServer {
 
     private Javalin createServer() {
         return Javalin.create(config -> {
-                var threadPool = new ExecutorThreadPool(2);
+                var threadPool = new ExecutorThreadPool();
                 threadPool.setDaemon(true);
                 threadPool.setName("ZenithProxy-WebAPI-%d");
                 config.jetty.threadPool = threadPool;
