@@ -20,7 +20,7 @@ public class WebAPICommand extends Command {
     @Override
     public CommandUsage commandUsage() {
         return CommandUsage.builder()
-            .name("webapi")
+            .name("webApi")
             .category(CommandCategory.MODULE)
             .description("""
                 Manages the HTTP web API for interacting with this ZenithProxy instance.
@@ -35,7 +35,7 @@ public class WebAPICommand extends Command {
 
     @Override
     public LiteralArgumentBuilder<CommandContext> register() {
-        return command("webapi").requires(Command::validateAccountOwner)
+        return command("webApi").requires(Command::validateAccountOwner)
             .then(argument("toggle", toggle()).executes(c -> {
                 PLUGIN_CONFIG.enabled = getToggle(c, "toggle");
                 if (PLUGIN_CONFIG.enabled) {
