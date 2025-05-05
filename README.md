@@ -45,6 +45,12 @@ The `embedComponent` can be parsed back from json with [Kyori Adventure](https:/
 Component c = GsonComponentSerializer.gson().deserialize(embedComponent);
 ```
 
+Or with Minecraft's text components:
+```java
+// MC 1.21.1 mojmap
+MutableComponent component = Component.Serializer.fromJson(response.embedComponent(), Minecraft.getInstance().player.registryAccess());
+```
+
 ### Example
 
 ```bash
