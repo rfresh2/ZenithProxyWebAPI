@@ -1,4 +1,4 @@
-package dev.zenith.web;
+package dev.zenith.web.api;
 
 import com.zenith.command.api.CommandContext;
 import com.zenith.command.api.CommandOutputHelper;

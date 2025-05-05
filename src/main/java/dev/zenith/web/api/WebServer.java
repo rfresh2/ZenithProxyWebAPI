@@ -1,13 +1,13 @@
-package dev.zenith.web;
+package dev.zenith.web.api;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.zenith.Globals;
 import com.zenith.command.api.CommandContext;
 import com.zenith.discord.EmbedSerializer;
 import com.zenith.util.ComponentSerializer;
-import dev.zenith.web.model.AuthErrorResponse;
-import dev.zenith.web.model.CommandRequest;
-import dev.zenith.web.model.CommandResponse;
+import dev.zenith.web.api.model.AuthErrorResponse;
+import dev.zenith.web.api.model.CommandRequest;
+import dev.zenith.web.api.model.CommandResponse;
 import io.javalin.Javalin;
 import io.javalin.http.util.NaiveRateLimit;
 import io.javalin.json.JavalinJackson;

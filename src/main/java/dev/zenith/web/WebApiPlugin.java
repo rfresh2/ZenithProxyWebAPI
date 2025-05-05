@@ -3,6 +3,7 @@ package dev.zenith.web;
 import com.zenith.plugin.api.Plugin;
 import com.zenith.plugin.api.PluginAPI;
 import com.zenith.plugin.api.ZenithProxyPlugin;
+import dev.zenith.web.api.WebServer;
 import dev.zenith.web.command.WebAPICommand;
 import net.kyori.adventure.text.logger.slf4j.ComponentLogger;
 

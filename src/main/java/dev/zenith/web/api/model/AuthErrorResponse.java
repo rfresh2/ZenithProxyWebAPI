@@ -1,4 +1,4 @@
-package dev.zenith.web.model;
+package dev.zenith.web.api.model;
 
 public record AuthErrorResponse(
     String reason
