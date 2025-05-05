@@ -1,5 +1,6 @@
 package dev.zenith.web;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.zenith.Globals;
 import com.zenith.command.api.CommandContext;
 import com.zenith.discord.EmbedSerializer;
@@ -9,6 +10,7 @@ import dev.zenith.web.model.CommandRequest;
 import dev.zenith.web.model.CommandResponse;
 import io.javalin.Javalin;
 import io.javalin.http.util.NaiveRateLimit;
+import io.javalin.json.JavalinJackson;
 import org.eclipse.jetty.util.thread.ExecutorThreadPool;
 
 import java.util.List;
@@ -49,6 +51,9 @@ public class WebServer {
                 threadPool.setName("ZenithProxy-WebAPI-%d");
                 config.jetty.threadPool = threadPool;
                 config.http.defaultContentType = "application/json";
+                var objectMapper = JavalinJackson.defaultMapper()
+                        .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+                config.jsonMapper(new JavalinJackson(objectMapper, false));
             })
             .beforeMatched(ctx -> {
                 var authHeaderValue = ctx.header("Authorization");
