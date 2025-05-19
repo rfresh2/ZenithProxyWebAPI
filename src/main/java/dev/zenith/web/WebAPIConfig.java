@@ -8,4 +8,5 @@ public class WebAPIConfig {
     public String authToken = UUID.randomUUID().toString();
     public boolean rateLimiter = true;
     public int rateLimitRequestsPerMinute = 30;
+    public boolean commandsAccountOwnerPerms = false;
 }

@@ -28,7 +28,8 @@ public class WebAPICommand extends Command {
             .usageLines(
                 "on/off",
                 "port <port>",
-                "auth <token>"
+                "auth <token>",
+                "commandsAccountOwnerPerms on/off"
             )
             .build();
     }
@@ -58,6 +59,11 @@ public class WebAPICommand extends Command {
                 PLUGIN_CONFIG.authToken = getString(c, "token");
                 c.getSource().getEmbed()
                     .title("Auth Token Set");
+            })))
+            .then(literal("commandsAccountOwnerPerms").then(argument("toggle", toggle()).executes(c -> {
+                PLUGIN_CONFIG.commandsAccountOwnerPerms = getToggle(c, "toggle");
+                c.getSource().getEmbed()
+                    .title("Commands Account Owner Perms " + toggleStrCaps(PLUGIN_CONFIG.commandsAccountOwnerPerms));
             })));
     }
 
@@ -67,6 +73,7 @@ public class WebAPICommand extends Command {
             .addField("Web API", SERVER.isRunning() ? "Running" : "Stopped")
             .addField("Port", PLUGIN_CONFIG.port)
             .addField("Auth Token", PLUGIN_CONFIG.authToken)
+            .addField("Commands Account Owner Perms", PLUGIN_CONFIG.commandsAccountOwnerPerms)
             .primaryColor();
     }
 }
