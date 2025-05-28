@@ -35,9 +35,11 @@ tasks {
         relocate("jakarta.servlet", "$shadowPackage.jakarta.servlet")
         relocate("kotlin", "$shadowPackage.kotlin")
         relocate("org.eclipse", "$shadowPackage.org.eclipse")
-        exclude("org/slf4j/**")
-        exclude("org/jetbrains/**")
         exclude("META-INF/maven/**")
         // todo: transform service files? seems to work fine without them for now
+        dependencies {
+            exclude(dependency("org.slf4j::"))
+            exclude(dependency("org.jetbrains:annotations:"))
+        }
     }
 }
