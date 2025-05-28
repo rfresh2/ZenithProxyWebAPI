@@ -1,6 +1,8 @@
 package dev.zenith.web.api;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.zenith.Globals;
 import com.zenith.command.api.CommandContext;
 import com.zenith.discord.EmbedSerializer;
@@ -9,7 +11,6 @@ import dev.zenith.web.api.model.AuthErrorResponse;
 import dev.zenith.web.api.model.CommandRequest;
 import dev.zenith.web.api.model.CommandResponse;
 import io.javalin.Javalin;
-import io.javalin.http.util.NaiveRateLimit;
 import io.javalin.json.JavalinJackson;
 import org.eclipse.jetty.util.thread.ExecutorThreadPool;
 
@@ -21,6 +22,9 @@ import static dev.zenith.web.WebApiPlugin.PLUGIN_CONFIG;
 
 public class WebServer {
     private Javalin server;
+    private final Cache<String, Integer> rateLimitCache = CacheBuilder.newBuilder()
+        .expireAfterWrite(1, TimeUnit.MINUTES)
+        .build();
 
     public synchronized void start() {
         if (server != null) {
@@ -56,6 +60,20 @@ public class WebServer {
                 config.jsonMapper(new JavalinJackson(objectMapper, false));
             })
             .beforeMatched(ctx -> {
+                if (PLUGIN_CONFIG.rateLimiter) {
+                    String ip = ctx.ip();
+                    synchronized (this) {
+                        int reqCount = rateLimitCache.get(ip, () -> 0);
+                        rateLimitCache.put(ip, reqCount + 1);
+                        if (reqCount >= PLUGIN_CONFIG.rateLimitRequestsPerMinute) {
+                            ctx.status(429);
+                            ctx.json(new AuthErrorResponse("Rate limit exceeded"));
+                            ctx.skipRemainingHandlers();
+                            LOG.warn("Rate limit exceeded for IP: {}", ip);
+                            return;
+                        }
+                    }
+                }
                 var authHeaderValue = ctx.header("Authorization");
                 if (authHeaderValue != null) {
                     var expectedHeaderValue = PLUGIN_CONFIG.authToken;
@@ -73,9 +91,6 @@ public class WebServer {
                 LOG.warn("Denied request from {}: {}", ctx.ip(), reason);
             })
             .post("/command", ctx -> {
-                if (PLUGIN_CONFIG.rateLimiter) {
-                    NaiveRateLimit.requestPerTimeUnit(ctx, PLUGIN_CONFIG.rateLimitRequestsPerMinute, TimeUnit.MINUTES);
-                }
                 var req = ctx.bodyAsClass(CommandRequest.class);
                 var command = req.command();
                 var context = CommandContext.create(command, WebAPICommandSource.INSTANCE);

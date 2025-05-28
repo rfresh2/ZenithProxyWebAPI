@@ -29,7 +29,9 @@ public class WebAPICommand extends Command {
                 "on/off",
                 "port <port>",
                 "auth <token>",
-                "commandsAccountOwnerPerms on/off"
+                "commandsAccountOwnerPerms on/off",
+                "rateLimiter on/off",
+                "rateLimiter requestsPerMinute <requestCount>"
             )
             .build();
     }
@@ -64,7 +66,18 @@ public class WebAPICommand extends Command {
                 PLUGIN_CONFIG.commandsAccountOwnerPerms = getToggle(c, "toggle");
                 c.getSource().getEmbed()
                     .title("Commands Account Owner Perms " + toggleStrCaps(PLUGIN_CONFIG.commandsAccountOwnerPerms));
-            })));
+            })))
+            .then(literal("rateLimiter")
+                .then(argument("toggle", toggle()).executes(c -> {
+                    PLUGIN_CONFIG.rateLimiter = getToggle(c, "toggle");
+                    c.getSource().getEmbed()
+                        .title("Rate Limiter " + toggleStrCaps(PLUGIN_CONFIG.rateLimiter));
+                }))
+                .then(literal("requestsPerMinute").then(argument("requests", integer(1)).executes(c -> {
+                    PLUGIN_CONFIG.rateLimitRequestsPerMinute = getInteger(c, "requests");
+                    c.getSource().getEmbed()
+                        .title("Rate Limiter Requests Per Minute Set");
+                }))));
     }
 
     @Override
@@ -74,6 +87,8 @@ public class WebAPICommand extends Command {
             .addField("Port", PLUGIN_CONFIG.port)
             .addField("Auth Token", PLUGIN_CONFIG.authToken)
             .addField("Commands Account Owner Perms", PLUGIN_CONFIG.commandsAccountOwnerPerms)
+            .addField("Rate Limiter", toggleStr(PLUGIN_CONFIG.rateLimiter))
+            .addField("Rate Limit Requests Per Minute", PLUGIN_CONFIG.rateLimitRequestsPerMinute)
             .primaryColor();
     }
 }
