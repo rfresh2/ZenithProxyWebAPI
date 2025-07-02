@@ -13,7 +13,7 @@ import net.kyori.adventure.text.logger.slf4j.ComponentLogger;
     description = "Web API for ZenithProxy",
     url = "https://github.com/rfresh2/ZenithProxyWebAPI",
     authors = {"rfresh2"},
-    mcVersions = {"1.21.0", "1.21.4", "1.21.5"}
+    mcVersions = {"1.21.0", "1.21.4", "1.21.5", "1.21.7"}
 )
 public class WebApiPlugin implements ZenithProxyPlugin {
     public static WebAPIConfig PLUGIN_CONFIG;
