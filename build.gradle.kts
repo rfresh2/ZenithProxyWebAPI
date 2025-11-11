@@ -6,12 +6,13 @@ group = properties["maven_group"] as String
 version = properties["plugin_version"] as String
 val mc = properties["mc"] as String
 
-java { toolchain { languageVersion = JavaLanguageVersion.of(21) } }
+java { toolchain { languageVersion = JavaLanguageVersion.of(25) } }
 
 zenithProxyPlugin {
     templateProperties = mapOf(
         "version" to project.version
     )
+    javaReleaseVersion = JavaLanguageVersion.of(21)
 }
 
 repositories {
@@ -25,7 +26,7 @@ repositories {
 
 dependencies {
     zenithProxy("com.zenith:ZenithProxy:$mc-SNAPSHOT")
-    shade("io.javalin:javalin:6.6.0")
+    shade("io.javalin:javalin:6.7.0")
 }
 
 tasks {
