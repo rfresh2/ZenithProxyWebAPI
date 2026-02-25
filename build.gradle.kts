@@ -26,7 +26,7 @@ repositories {
 
 dependencies {
     zenithProxy("com.zenith:ZenithProxy:$mc-SNAPSHOT")
-    shade("io.javalin:javalin:6.7.0")
+    shade("io.javalin:javalin:7.0.0")
 
     // todo: remove when javalin updates to jackson 3
     shade("com.fasterxml.jackson.core:jackson-core:2.20.1")
