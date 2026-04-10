@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ZenithProxy Console</title>
+    <style>
+        :root {
+            color-scheme: dark;
+            --bg: #0a0f17;
+            --panel: #101826;
+            --panel-border: #233149;
+            --text: #d9e3f0;
+            --muted: #8fa3bf;
+            --accent: #5bb6ff;
+            --accent-strong: #1e88e5;
+            --danger: #ff6b6b;
+            --ok: #54d38a;
+            --busy: #f2cc60;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background:
+                radial-gradient(circle at top, rgba(91, 182, 255, 0.18), transparent 38%),
+                linear-gradient(180deg, #09101a 0%, var(--bg) 100%);
+            color: var(--text);
+            font: 14px/1.45 Inter, system-ui, sans-serif;
+        }
+
+        .layout {
+            width: min(1200px, calc(100vw - 24px));
+            margin: 0 auto;
+            padding: 24px 0;
+        }
+
+        .header {
+            margin-bottom: 16px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            margin: 6px 0 0;
+            color: var(--muted);
+        }
+
+        .grid {
+            display: grid;
+            gap: 16px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .auth-shell {
+            display: grid;
+            place-items: center;
+            min-height: calc(100vh - 120px);
+        }
+
+        .auth-panel {
+            width: min(480px, 100%);
+        }
+
+        .console-shell {
+            display: block;
+        }
+
+        .console-shell .console {
+            min-height: calc(100vh - 120px);
+            height: calc(100vh - 120px);
+        }
+
+        .panel {
+            background: rgba(16, 24, 38, 0.92);
+            border: 1px solid var(--panel-border);
+            border-radius: 16px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.28);
+            overflow: hidden;
+        }
+
+        .panel-body {
+            padding: 16px;
+        }
+
+        .panel-title {
+            margin: 0 0 12px;
+            font-size: 15px;
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--muted);
+        }
+
+        input,
+        button {
+            width: 100%;
+            border-radius: 10px;
+            border: 1px solid #334662;
+            background: #0c1422;
+            color: var(--text);
+            padding: 11px 12px;
+            font: inherit;
+        }
+
+        input:focus,
+        button:focus {
+            outline: 2px solid rgba(91, 182, 255, 0.35);
+            outline-offset: 1px;
+        }
+
+        button {
+            cursor: pointer;
+            background: linear-gradient(180deg, var(--accent), var(--accent-strong));
+            border: none;
+            color: #08121d;
+            font-weight: 700;
+        }
+
+        button.secondary {
+            background: #162131;
+            border: 1px solid #334662;
+            color: var(--text);
+            font-weight: 600;
+        }
+
+        button:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+        }
+
+        .stack {
+            display: grid;
+            gap: 12px;
+        }
+
+        .row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .row > * {
+            flex: 1;
+        }
+
+        .status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            border-radius: 999px;
+            background: #101b2b;
+            color: var(--muted);
+            border: 1px solid #24354d;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 999px;
+            background: var(--danger);
+            box-shadow: 0 0 12px rgba(255, 107, 107, 0.7);
+        }
+
+        .status.ok .status-dot {
+            background: var(--ok);
+            box-shadow: 0 0 12px rgba(84, 211, 138, 0.7);
+        }
+
+        .status.busy .status-dot {
+            background: var(--busy);
+            box-shadow: 0 0 12px rgba(242, 204, 96, 0.7);
+        }
+
+        .help,
+        .message {
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .message.error {
+            color: #ff9b9b;
+        }
+
+        .console {
+            display: grid;
+            grid-template-rows: auto auto 1fr auto;
+            min-height: 70vh;
+            height: 70vh;
+        }
+
+        .console-toolbar,
+        .console-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--panel-border);
+        }
+
+        .console-footer {
+            border-bottom: none;
+            border-top: 1px solid var(--panel-border);
+        }
+
+        .console-meta {
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        pre {
+            margin: 0;
+            padding: 16px;
+            overflow: auto;
+            min-height: 0;
+            white-space: pre-wrap;
+            word-break: break-word;
+            font: 13px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+            background: linear-gradient(180deg, rgba(6, 10, 17, 0.4), rgba(6, 10, 17, 0.82));
+        }
+
+        .ansi-bold {
+            font-weight: 700;
+        }
+
+        .command-form {
+            display: grid;
+            gap: 10px;
+            grid-template-columns: minmax(0, 1fr) 140px;
+            width: 100%;
+        }
+
+        .checkbox {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--muted);
+            cursor: pointer;
+        }
+
+        .checkbox input {
+            width: 16px;
+            height: 16px;
+            padding: 0;
+        }
+
+        @media (max-width: 900px) {
+            .console {
+                min-height: 60vh;
+                height: 60vh;
+            }
+
+            .console-shell .console {
+                min-height: calc(100vh - 96px);
+                height: calc(100vh - 96px);
+            }
+        }
+
+        @media (max-width: 640px) {
+            .layout {
+                width: min(100vw - 16px, 1200px);
+                padding: 16px 0;
+            }
+
+            .row,
+            .command-form,
+            .console-toolbar,
+            .console-footer {
+                flex-direction: column;
+                align-items: stretch;
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+<main class="layout">
+    <section class="header">
+        <h1>ZenithProxy Web API Console</h1>
+    </section>
+
+    <section class="grid auth-shell" id="auth-view">
+        <aside class="panel auth-panel">
+            <div class="panel-body stack">
+                <h2 class="panel-title">Access</h2>
+
+                <div>
+                    <label for="api-key">Auth Token</label>
+                    <input id="api-key" type="text" autocomplete="off" spellcheck="false" placeholder="c05598ed-d123-4e8f-9aa7-40c11e657f23">
+                </div>
+
+                <label class="checkbox" for="remember-key">
+                    <input id="remember-key" type="checkbox">
+                    <span>Remember token in this browser</span>
+                </label>
+
+                <div class="row">
+                    <button id="unlock-button" type="button">Authenticate</button>
+                    <button id="forget-button" class="secondary" type="button">Forget Token</button>
+                </div>
+
+                <p id="auth-message" class="message"></p>
+            </div>
+        </aside>
+    </section>
+
+    <section class="grid console-shell hidden" id="console-view">
+        <section class="panel console">
+            <div class="console-toolbar">
+                <div>
+                    <div class="panel-title">Console</div>
+                </div>
+                <div id="console-status" class="status">
+                    <span class="status-dot"></span>
+                    <span id="console-meta">Waiting for authentication</span>
+                </div>
+            </div>
+
+            <pre id="console-output">ZenithProxy web console ready.
+Provide an auth token to unlock access.</pre>
+
+            <div class="console-footer">
+                <form id="command-form" class="command-form">
+                    <input id="command-input" type="text" autocomplete="off" spellcheck="false" placeholder=">" disabled>
+                    <button id="send-command-button" type="submit" disabled>Send Command</button>
+                </form>
+            </div>
+        </section>
+    </section>
+</main>
+
+<script src="/app.js"></script>
+</body>
+</html>

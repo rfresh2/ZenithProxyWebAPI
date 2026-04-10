@@ -29,6 +29,8 @@ public class WebAPICommand extends Command {
                 "on/off",
                 "port <port>",
                 "auth <token>",
+                "webUI on/off",
+                "logRetentionEntries <entries>",
                 "commandsAccountOwnerPerms on/off",
                 "rateLimiter on/off",
                 "rateLimiter requestsPerMinute <requestCount>"
@@ -62,6 +64,17 @@ public class WebAPICommand extends Command {
                 c.getSource().getEmbed()
                     .title("Auth Token Set");
             })))
+            .then(literal("webUI").then(argument("toggle", toggle()).executes(c -> {
+                PLUGIN_CONFIG.webUI = getToggle(c, "toggle");
+                c.getSource().getEmbed()
+                    .title("Web UI " + toggleStrCaps(PLUGIN_CONFIG.webUI));
+            })))
+            .then(literal("logRetentionEntries").then(argument("entries", integer(1)).executes(c -> {
+                PLUGIN_CONFIG.logRetentionEntries = getInteger(c, "entries");
+                c.getSource().getEmbed()
+                    .title("Log Retention Entries Set")
+                    .addField("Info", "Changes will take effect on next ZenithProxy restart");
+            })))
             .then(literal("commandsAccountOwnerPerms").then(argument("toggle", toggle()).executes(c -> {
                 PLUGIN_CONFIG.commandsAccountOwnerPerms = getToggle(c, "toggle");
                 c.getSource().getEmbed()
@@ -86,6 +99,8 @@ public class WebAPICommand extends Command {
             .addField("Web API", SERVER.isRunning() ? "Running" : "Stopped")
             .addField("Port", PLUGIN_CONFIG.port)
             .addField("Auth Token", PLUGIN_CONFIG.authToken)
+            .addField("Web UI", toggleStr(PLUGIN_CONFIG.webUI))
+            .addField("Log Retention Entries", PLUGIN_CONFIG.logRetentionEntries)
             .addField("Commands Account Owner Perms", PLUGIN_CONFIG.commandsAccountOwnerPerms)
             .addField("Rate Limiter", toggleStr(PLUGIN_CONFIG.rateLimiter))
             .addField("Rate Limit Requests Per Minute", PLUGIN_CONFIG.rateLimitRequestsPerMinute)
