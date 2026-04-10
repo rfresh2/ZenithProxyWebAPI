@@ -26,12 +26,12 @@ repositories {
 
 dependencies {
     zenithProxy("com.zenith:ZenithProxy:$mc-SNAPSHOT")
-    shade("io.javalin:javalin:7.0.0")
+    shade("io.javalin:javalin:7.1.0")
 
     // todo: remove when javalin updates to jackson 3
-    shade("com.fasterxml.jackson.core:jackson-core:2.20.1")
-    shade("com.fasterxml.jackson.core:jackson-databind:2.20.1")
-    shade("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.20.1")
+    shade("com.fasterxml.jackson.core:jackson-core:2.21.2")
+    shade("com.fasterxml.jackson.core:jackson-databind:2.21.2")
+    shade("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.21.2")
 }
 
 tasks {

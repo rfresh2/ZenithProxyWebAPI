@@ -99,8 +99,8 @@ public class WebServer {
             config.routes.apiBuilder(() -> {
                 beforeMatched(ctx -> {
                     if (ctx.path().startsWith("/api")) {
+                        String ip = ctx.ip();
                         if (PLUGIN_CONFIG.rateLimiter) {
-                            String ip = ctx.ip();
                             synchronized (this) {
                                 int reqCount = rateLimitCache.get(ip, () -> 0);
                                 rateLimitCache.put(ip, reqCount + 1);
@@ -117,7 +117,7 @@ public class WebServer {
                         if (authHeaderValue != null) {
                             var expectedHeaderValue = PLUGIN_CONFIG.authToken;
                             if (authHeaderValue.equals(expectedHeaderValue)) {
-                                rateLimitCache.invalidate(ctx.ip());
+                                rateLimitCache.invalidate(ip);
                                 // ok
                                 return;
                             }
@@ -128,7 +128,7 @@ public class WebServer {
                         ctx.json(new AuthErrorResponse(reason));
                         ctx.status(401);
                         ctx.skipRemainingHandlers();
-                        LOG.warn("Denied request from {}: {}", ctx.ip(), reason);
+                        LOG.warn("Denied request from {}: {}", ip, reason);
                     } else if (!PLUGIN_CONFIG.webUI) {
                         ctx.status(404);
                         ctx.skipRemainingHandlers();
