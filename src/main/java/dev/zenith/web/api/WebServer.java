@@ -17,6 +17,7 @@ import dev.zenith.web.api.model.CommandRequest;
 import dev.zenith.web.api.model.CommandResponse;
 import dev.zenith.web.api.model.LogResponse;
 import io.javalin.Javalin;
+import io.javalin.http.Handler;
 import io.javalin.http.staticfiles.Location;
 import io.javalin.json.JavalinJackson;
 import org.eclipse.jetty.util.thread.ExecutorThreadPool;
@@ -98,7 +99,7 @@ public class WebServer {
             config.staticFiles.add("/web", Location.CLASSPATH);
             config.routes.apiBuilder(() -> {
                 beforeMatched(ctx -> {
-                    if (ctx.path().startsWith("/api")) {
+                    if (ctx.path().startsWith("/api") || ctx.path().equals("/command")) {
                         String ip = ctx.ip();
                         if (PLUGIN_CONFIG.rateLimiter) {
                             synchronized (this) {
@@ -153,7 +154,7 @@ public class WebServer {
                     ));
                     ctx.status(200);
                 });
-                post("/api/command", ctx -> {
+                Handler commandHandler = ctx -> {
                     var req = ctx.bodyAsClass(CommandRequest.class);
                     var command = req.command();
                     var context = CommandContext.create(command, WebAPICommandSource.INSTANCE);
@@ -170,7 +171,9 @@ public class WebServer {
                     }
                     ctx.json(new CommandResponse(embedResponse, embedResponseComponent, multiLineResponse));
                     ctx.status(200);
-                });
+                };
+                post("/command", commandHandler);
+                post("/api/command", commandHandler);
             });
         });
     }
