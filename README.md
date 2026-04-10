@@ -23,6 +23,10 @@ The web UI allows you to run commands and view live logs.
 
 Access is authenticated with the same auth token.
 
+<p align="left">
+    <img src="https://raw.githubusercontent.com/rfresh2/ZenithProxyWebAPI/refs/heads/mainline/docs/web-ui.png" alt="ZenithProxy Web UI">
+</p>
+
 # HTTP API
 
 ## Authorization
