@@ -13,7 +13,7 @@ Runs a local web server that lets you interact with the ZenithProxy instance.
 * `webApi logRetentionEntries <entries>` -> default: 500
 * `webApi commandsAccountOwnerPerms on/off` -> default: off
 * `webApi rateLimiter on/off` -> default: on
-* `webApi rateLimitRequestsPerMinute <rate>` -> default: 30
+* `webApi rateLimiter requestsPerMinute <rate>` -> default: 30
 
 # Web UI
 
