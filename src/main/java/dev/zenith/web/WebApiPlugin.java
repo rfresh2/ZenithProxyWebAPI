@@ -8,7 +8,7 @@ import dev.zenith.web.command.WebAPICommand;
 import net.kyori.adventure.text.logger.slf4j.ComponentLogger;
 
 @Plugin(
-    id = "web-api",
+    id = BuildConstants.PLUGIN_ID,
     version = BuildConstants.VERSION,
     description = "Web API for ZenithProxy",
     url = "https://github.com/rfresh2/ZenithProxyWebAPI",
