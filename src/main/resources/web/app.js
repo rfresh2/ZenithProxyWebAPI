@@ -1,14 +1,13 @@
 const STORAGE_KEY = "zenith-web-api-key";
-const POLL_INTERVAL_MS = 1000;
-const LOG_PAGE_SIZE = 200;
+const RECONNECT_DELAY_MS = 1000;
 
 const state = {
     apiKey: "",
     isUnlocked: false,
     nextLogIndex: 0,
-    pollingHandle: null,
-    isPolling: false,
-    reconnectMode: null,
+    socket: null,
+    reconnectHandle: null,
+    intentionalClose: false,
 };
 
 const ANSI_COLOR_MAP = {
@@ -196,78 +195,14 @@ function replaceConsole(text) {
     elements.consoleOutput.scrollTop = elements.consoleOutput.scrollHeight;
 }
 
-function authHeaders() {
-    return {
-        Authorization: state.apiKey,
-        "Content-Type": "application/json",
-    };
-}
-
-async function requestJson(path, options = {}) {
-    const response = await fetch(path, options);
-    let payload = null;
-    try {
-        payload = await response.json();
-    } catch {
-        // Keep null payload for non-JSON failures.
-    }
-    if (!response.ok) {
-        const message = payload?.reason || `Request failed with status ${response.status}`;
-        throw new Error(message);
-    }
-    return payload;
-}
-
-function isAuthError(error) {
-    return /Authorization header missing|Invalid auth token/i.test(error.message);
-}
-
 function syncConsoleFromPayload(payload) {
     state.nextLogIndex = payload.nextIndex;
     const prefix = payload.baseIndex > 0 ? formatDroppedMessage(payload.baseIndex, 0) : "";
     replaceConsole(payload.lines.length > 0 ? `${prefix}${payload.lines.join("")}` : "Connected\n");
-    setConsoleState("connected", `Connected`);
-    state.reconnectMode = null;
+    setConsoleState("connected", "Connected");
 }
 
-function handlePollingFailure(error) {
-    if (isAuthError(error)) {
-        setUnlocked(false, error.message);
-        stopPolling();
-        return;
-    }
-
-    if (state.reconnectMode === null) {
-        state.reconnectMode = "resume";
-        setConsoleState("busy", "Connection lost. Retrying...");
-    } else if (state.reconnectMode === "resume") {
-        state.reconnectMode = "restart";
-        setConsoleState("busy", "ZenithProxy may have restarted. Waiting to resync console...");
-    } else {
-        setConsoleState("disconnected", "Disconnected. Retrying...");
-    }
-}
-
-async function recoverLogs() {
-    if (state.reconnectMode === "restart") {
-        const payload = await requestJson(`/api/logs?from=0&limit=${LOG_PAGE_SIZE}`, {
-            headers: authHeaders(),
-        });
-        syncConsoleFromPayload(payload);
-        setConsoleState("connected", `Reconnected after restart`);
-        return;
-    }
-
-    const payload = await requestJson(`/api/logs?from=${state.nextLogIndex}&limit=${LOG_PAGE_SIZE}`, {
-        headers: authHeaders(),
-    });
-
-    if (state.nextLogIndex > 0 && payload.fromIndex === 0 && payload.baseIndex === 0) {
-        state.reconnectMode = "restart";
-        await recoverLogs();
-        return;
-    }
-
+function appendLogsFromPayload(payload) {
     if (state.nextLogIndex < payload.baseIndex) {
         appendConsole(formatDroppedMessage(payload.baseIndex, state.nextLogIndex));
     }
@@ -275,59 +210,104 @@ async function recoverLogs() {
         appendConsole(payload.lines.join(""));
     }
     state.nextLogIndex = payload.nextIndex;
-    setConsoleState("connected", `Reconnected`);
-    state.reconnectMode = null;
 }
 
-async function pollLogs() {
-    if (!state.isUnlocked || state.isPolling) {
+function websocketUrl() {
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const url = new URL("/api/ws", `${protocol}//${window.location.host}`);
+    url.searchParams.set("token", state.apiKey);
+    return url;
+}
+
+function closeSocket() {
+    if (state.reconnectHandle !== null) {
+        window.clearTimeout(state.reconnectHandle);
+        state.reconnectHandle = null;
+    }
+    if (state.socket !== null) {
+        state.intentionalClose = true;
+        state.socket.close();
+        state.socket = null;
+    }
+}
+
+function scheduleReconnect() {
+    if (state.reconnectHandle !== null || state.intentionalClose) {
         return;
     }
-    state.isPolling = true;
+    state.reconnectHandle = window.setTimeout(() => {
+        state.reconnectHandle = null;
+        connectWebSocket(true);
+    }, RECONNECT_DELAY_MS);
+}
+
+function handleServerMessage(event, reconnecting) {
+    let payload;
     try {
-        if (state.reconnectMode !== null) {
-            await recoverLogs();
+        payload = JSON.parse(event.data);
+    } catch {
+        appendConsole("[connection error] Server sent an invalid message\n");
+        return;
+    }
+
+    if (payload.type === "snapshot") {
+        syncConsoleFromPayload(payload);
+        setUnlocked(true, "Auth token accepted. Console unlocked.");
+        setConsoleState("connected", reconnecting ? "Reconnected" : "Connected");
+        elements.commandInput.focus();
+        if (elements.rememberKey.checked) {
+            window.localStorage.setItem(STORAGE_KEY, state.apiKey);
+        } else {
+            window.localStorage.removeItem(STORAGE_KEY);
+        }
+        return;
+    }
+    if (payload.type === "logs") {
+        appendLogsFromPayload(payload);
+        return;
+    }
+    if (payload.type === "error") {
+        appendConsole(`[command failed] ${payload.reason}\n`);
+    }
+}
+
+function connectWebSocket(reconnecting = false) {
+    state.intentionalClose = false;
+    const socket = new WebSocket(websocketUrl());
+    state.socket = socket;
+
+    socket.addEventListener("message", event => {
+        if (state.socket === socket) {
+            handleServerMessage(event, reconnecting);
+        }
+    });
+
+    socket.addEventListener("close", () => {
+        if (state.socket !== socket) {
             return;
         }
-        const payload = await requestJson(`/api/logs?from=${state.nextLogIndex}&limit=${LOG_PAGE_SIZE}`, {
-            headers: authHeaders(),
-        });
-        if (state.nextLogIndex < payload.baseIndex) {
-            appendConsole(formatDroppedMessage(payload.baseIndex, state.nextLogIndex));
+        state.socket = null;
+        if (state.intentionalClose) {
+            return;
         }
-        if (payload.fromIndex === 0 && state.nextLogIndex === 0 && payload.lines.length === 0) {
-            replaceConsole("Connected\n");
-        } else if (payload.lines.length > 0) {
-            if (payload.fromIndex === 0 && state.nextLogIndex === 0) {
-                replaceConsole(payload.lines.join(""));
-            } else {
-                appendConsole(payload.lines.join(""));
-            }
+        if (!state.isUnlocked) {
+            state.apiKey = "";
+            replaceConsole("Enter a valid auth token to unlock.");
+            setUnlocked(false, "Connection rejected. Check the auth token and server availability.");
+            return;
         }
-        state.nextLogIndex = payload.nextIndex;
-        setConsoleState("connected", `Connected`);
-    } catch (error) {
-        handlePollingFailure(error);
-    } finally {
-        state.isPolling = false;
-    }
+        setConsoleState("busy", "Connection lost. Retrying...");
+        scheduleReconnect();
+    });
+
+    socket.addEventListener("error", () => {
+        if (state.socket === socket && state.isUnlocked) {
+            setConsoleState("busy", "Connection error. Retrying...");
+        }
+    });
 }
 
-function startPolling() {
-    stopPolling();
-    pollLogs();
-    state.pollingHandle = window.setInterval(pollLogs, POLL_INTERVAL_MS);
-}
-
-function stopPolling() {
-    if (state.pollingHandle !== null) {
-        window.clearInterval(state.pollingHandle);
-        state.pollingHandle = null;
-    }
-    state.reconnectMode = null;
-}
-
-async function unlock() {
+function unlock() {
     const apiKey = elements.apiKey.value.trim();
     if (!apiKey) {
         setUnlocked(false, "Enter an auth token.");
@@ -336,31 +316,16 @@ async function unlock() {
 
     state.apiKey = apiKey;
     state.nextLogIndex = 0;
-    state.reconnectMode = null;
+    closeSocket();
+    state.intentionalClose = false;
     replaceConsole("Connecting...\n");
-
-    try {
-        const payload = await requestJson(`/api/logs?from=0&limit=${LOG_PAGE_SIZE}`, {
-            headers: authHeaders(),
-        });
-        setUnlocked(true, "Auth token accepted. Console unlocked.");
-        syncConsoleFromPayload(payload);
-        elements.commandInput.focus();
-        if (elements.rememberKey.checked) {
-            window.localStorage.setItem(STORAGE_KEY, apiKey);
-        } else {
-            window.localStorage.removeItem(STORAGE_KEY);
-        }
-        startPolling();
-    } catch (error) {
-        state.apiKey = "";
-        replaceConsole("Enter a valid auth token to unlock.");
-        setUnlocked(false, error.message);
-    }
+    elements.authMessage.textContent = "Connecting...";
+    elements.authMessage.classList.remove("error");
+    connectWebSocket();
 }
 
 function forgetKey() {
-    stopPolling();
+    closeSocket();
     state.apiKey = "";
     state.nextLogIndex = 0;
     elements.apiKey.value = "";
@@ -370,9 +335,9 @@ function forgetKey() {
     setUnlocked(false, "Stored API key cleared.");
 }
 
-async function sendCommand(event) {
+function sendCommand(event) {
     event.preventDefault();
-    if (!state.isUnlocked) {
+    if (!state.isUnlocked || state.socket?.readyState !== WebSocket.OPEN) {
         return;
     }
 
@@ -382,24 +347,10 @@ async function sendCommand(event) {
     }
 
     elements.sendCommandButton.disabled = true;
-    try {
-        await requestJson("/api/command", {
-            method: "POST",
-            headers: authHeaders(),
-            body: JSON.stringify({ command }),
-        });
-        elements.commandInput.value = "";
-        // setConsoleState("busy", "Command sent. Waiting for log output...");
-        pollLogs();
-    } catch (error) {
-        appendConsole(`[command failed] ${error.message}\n`);
-        if (isAuthError(error)) {
-            setUnlocked(false, error.message);
-            stopPolling();
-        }
-    } finally {
-        elements.sendCommandButton.disabled = !state.isUnlocked;
-    }
+    const requestId = window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`;
+    state.socket.send(JSON.stringify({ type: "command", requestId, command }));
+    elements.commandInput.value = "";
+    elements.sendCommandButton.disabled = false;
 }
 
 function loadStoredKey() {

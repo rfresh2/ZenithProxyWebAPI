@@ -11,19 +11,24 @@ import static com.zenith.Globals.EVENT_BUS;
 
 public class CircularLogQueue {
     private final CircularFifoQueue<ConsoleLogEvent> events;
+    private final Runnable appendListener;
     private long totalAppended = 0;
 
-    public CircularLogQueue(final int maxEntries) {
+    public CircularLogQueue(final int maxEntries, final Runnable appendListener) {
         this.events = new CircularFifoQueue<>(maxEntries);
+        this.appendListener = appendListener;
         EVENT_BUS.subscribe(
             this,
             of(ConsoleLogEvent.class, this::onConsoleLogEvent)
         );
     }
 
-    private void onConsoleLogEvent(ConsoleLogEvent event) {
-        events.add(event);
-        totalAppended++;
+    private void onConsoleLogEvent(final ConsoleLogEvent event) {
+        synchronized (this) {
+            events.add(event);
+            totalAppended++;
+        }
+        appendListener.run();
     }
 
     public synchronized LogSnapshot snapshot(final long fromIndex, final int limit) {

@@ -17,7 +17,7 @@ Runs a local web server that lets you interact with the ZenithProxy instance.
 
 # Web UI
 
-You can open the web UI from a browser: `http://<proxy IP>:<port>`
+You can open the web UI from a browser: `http://<proxy IP>:<port>` (example: `http://localhost:8080`)
 
 The web UI allows you to run commands and view live logs.
 
@@ -75,48 +75,6 @@ curl --location 'http://localhost:8080/api/command' \
 --header 'Authorization: c05598ed-d123-4e8f-9aa7-40c11e657f23' \
 --header 'Content-Type: application/json' \
 --data '{"command":"status"}'
-```
-
-## GET `/api/logs`
-
-Returns recent log entries. Intended for use only with the web UI.
-
-Old log entries are evicted once the configured retention limit is reached.
-
-### Query Parameters
-
-* `from` - optional log cursor to continue from. Default: `0`
-* `limit` - optional maximum number of log entries to return. Default: `200`, max: `500`
-
-### Response
-
-```json
-{
-  "baseIndex": 1250,
-  "fromIndex": 1300,
-  "nextIndex": 1350,
-  "retained": 500,
-  "lines": [
-    "[2026/04/09 16:25:53] [Proxy] [INFO] ZenithProxy started!\n"
-  ]
-}
-```
-
-### Response Fields
-
-* `baseIndex` - global index of the oldest retained log entry currently available
-* `fromIndex` - actual starting cursor used for this response
-* `nextIndex` - cursor to pass to the next `/api/logs` request
-* `retained` - number of log entries currently kept in memory
-* `lines` - log entries as an array of strings
-
-If your requested `from` value is older than `baseIndex`, older log entries have already been evicted and the response begins at `baseIndex`.
-
-### Example
-
-```bash
-curl --location 'http://localhost:8080/api/logs?from=0&limit=100' \
---header 'Authorization: c05598ed-d123-4e8f-9aa7-40c11e657f23'
 ```
 
 # FAQ
