@@ -1,16 +1,20 @@
 plugins {
-    id("zenithproxy.plugin.dev") version "1.0.0-SNAPSHOT"
+    id("zenithproxy.plugin.dev") version "1.0.1-SNAPSHOT"
 }
 
-group = properties["maven_group"] as String
-version = properties["plugin_version"] as String
-val mc = properties["mc"] as String
+group = property("maven_group") as String
+version = property("plugin_version") as String
+val mc = property("mc") as String
+val pluginId = property("plugin_id") as String
 
 java { toolchain { languageVersion = JavaLanguageVersion.of(25) } }
 
 zenithProxyPlugin {
     templateProperties = mapOf(
-        "version" to project.version
+        "version" to project.version,
+        "mc_version" to mc,
+        "plugin_id" to pluginId,
+        "maven_group" to group as String,
     )
     javaReleaseVersion = JavaLanguageVersion.of(21)
 }
@@ -26,12 +30,7 @@ repositories {
 
 dependencies {
     zenithProxy("com.zenith:ZenithProxy:$mc-SNAPSHOT")
-    shade("io.javalin:javalin:7.1.0")
-
-    // todo: remove when javalin updates to jackson 3
-    shade("com.fasterxml.jackson.core:jackson-core:2.21.2")
-    shade("com.fasterxml.jackson.core:jackson-databind:2.21.2")
-    shade("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.21.2")
+    shade("io.javalin:javalin:7.2.3")
 }
 
 tasks {
@@ -46,6 +45,7 @@ tasks {
         dependencies {
             exclude(dependency("org.slf4j:.*:.*"))
             exclude(dependency("org.jetbrains:annotations:.*:.*"))
+            exclude(dependency("org.ow2.asm:.*:.*"))
         }
     }
 }

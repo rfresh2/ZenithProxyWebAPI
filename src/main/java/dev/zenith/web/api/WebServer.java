@@ -3,7 +3,6 @@ package dev.zenith.web.api;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.zenith.Globals;
@@ -19,14 +18,14 @@ import dev.zenith.web.api.model.LogResponse;
 import io.javalin.Javalin;
 import io.javalin.http.Handler;
 import io.javalin.http.staticfiles.Location;
-import io.javalin.json.JavalinJackson;
+import io.javalin.json.JavalinJackson3;
 import org.eclipse.jetty.util.thread.ExecutorThreadPool;
 import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static dev.zenith.web.WebApiPlugin.LOG;
@@ -36,7 +35,7 @@ import static io.javalin.apibuilder.ApiBuilder.*;
 public class WebServer {
     private Javalin server;
     private final Cache<String, Integer> rateLimitCache = CacheBuilder.newBuilder()
-        .expireAfterWrite(1, TimeUnit.MINUTES)
+        .expireAfterWrite(Duration.ofMinutes(1))
         .build();
     private final AtomicBoolean logAppenderInitialized = new AtomicBoolean(false);
     private final CircularLogAppender appender = new CircularLogAppender(Math.max(1, PLUGIN_CONFIG.logRetentionEntries));
@@ -93,9 +92,8 @@ public class WebServer {
             threadPool.setName("ZenithProxy-WebAPI-%d");
             config.jetty.threadPool = threadPool;
             config.http.defaultContentType = "application/json";
-            var objectMapper = JavalinJackson.defaultMapper()
-                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-            config.jsonMapper(new JavalinJackson(objectMapper, false));
+            var objectMapper = JavalinJackson3.defaultMapper();
+            config.jsonMapper(new JavalinJackson3(objectMapper, false));
             config.staticFiles.add("/web", Location.CLASSPATH);
             config.routes.apiBuilder(() -> {
                 beforeMatched(ctx -> {
