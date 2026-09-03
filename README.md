@@ -64,8 +64,21 @@ Component c = GsonComponentSerializer.gson().deserialize(embedComponent);
 
 Or with Minecraft's text components:
 ```java
-// MC 1.21.1 mojmap
-MutableComponent component = Component.Serializer.fromJson(response.embedComponent(), Minecraft.getInstance().player.registryAccess());
+// MC 1.21.6+ mojmap
+Component component = ComponentSerialization.CODEC
+        .parse(JsonOps.INSTANCE, StrictJsonParser.parse(response.embedComponent()))
+        .getOrThrow();
+
+// MC 1.21.1-1.21.5 mojmap
+MutableComponent component = Component.Serializer.fromJson(
+    response.embedComponent(), 
+    Minecraft.getInstance().player.registryAccess()
+);
+
+// MC 1.19.2-1.20.6 mojmap
+MutableComponent component = Component.Serializer.fromJson(
+    response.embedComponent()
+);
 ```
 
 ### Example
