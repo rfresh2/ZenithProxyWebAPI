@@ -7,7 +7,7 @@ public class WebAPIConfig {
     public int port = 8080;
     public String authToken = UUID.randomUUID().toString();
     public boolean webUI = true;
-    public int logRetentionEntries = 500;
+    public int logRetentionEntries = 150;
     public boolean rateLimiter = true;
     public int rateLimitRequestsPerMinute = 30;
     public boolean commandsAccountOwnerPerms = false;
