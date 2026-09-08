@@ -254,6 +254,7 @@ function handleServerMessage(event, reconnecting) {
         syncConsoleFromPayload(payload);
         setUnlocked(true, "Auth token accepted. Console unlocked.");
         setConsoleState("connected", reconnecting ? "Reconnected" : "Connected");
+        elements.consoleOutput.scrollTop = elements.consoleOutput.scrollHeight;
         elements.commandInput.focus();
         if (elements.rememberKey.checked) {
             window.localStorage.setItem(STORAGE_KEY, state.apiKey);
